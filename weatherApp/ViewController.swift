@@ -11,35 +11,46 @@ import UIKit
 class ViewController: UIViewController {
 
     @IBOutlet weak var inputCityName: UITextField!
-    
     @IBOutlet weak var showDetailText: UITextView!
     
     @IBAction func submitButton(_ sender: Any) {
+        
         var cityName = inputCityName.text
         cityName = cityName?.replacingOccurrences(of: " ", with: "-")
+
+        var weatherURL = "https://api.openweathermap.org/data/2.5/weather?q=London&appid=6b3b6af44ecbb7a4f3c8762d43688273"
+        weatherURL = weatherURL.replacingOccurrences(of: "London", with: cityName!)
+
+        let myWeatherURL = URL (string: weatherURL)
         
-        var weatherURL = "https://www.weather-forecast.com/locations/Irving/forecasts/latest"
-        weatherURL = weatherURL.replacingOccurrences(of: "Irving", with: cityName!)
-    
-        guard let myURL = URL(string: weatherURL) else {
-            print("Error: \(weatherURL) doesn't seem to be a valid URL")
-            return
+        let task = URLSession.shared.dataTask(with: myWeatherURL!) {
+            (data, response, error) in
+            
+            if error != nil {
+                print(myWeatherURL)
+                print("error")
+            } else {
+                if let urlContent = data {
+                    do {
+                        let jsonResult = try JSONSerialization.jsonObject(with: urlContent, options: JSONSerialization.ReadingOptions.mutableContainers) as! NSDictionary
+                        print(jsonResult)
+                        print(jsonResult["name"] as! String)
+                        
+                        let weather = jsonResult["weather"] as? NSArray
+                        let weatherItem = weather?[0] as? NSDictionary
+                        let description: String = (weatherItem?["description"] as? String)!
+                        print(description)
+                        self.showDetailText.text = description
+                        
+                    } catch {
+                        print("Failed")
+                    }
+                }
+            }
         }
         
-        do {
-            let websiteData = try String(contentsOf: myURL)
-            print(websiteData)
-            var weatherStatus: [String] =  websiteData.components(separatedBy: "<span class=\"phrase\">")
-            weatherStatus = weatherStatus[1].components(separatedBy:"</span>")
-            weatherStatus = [weatherStatus[0].replacingOccurrences(of: "&deg;", with: " degree " )]
-            showDetailText.text = weatherStatus[0]
-            
-        }catch _ {
-
-            showDetailText.text = "Error Please input valid City"
-            
-        }
-
+        task.resume()
+        
     }
     
     override func viewDidLoad() {
@@ -49,5 +60,3 @@ class ViewController: UIViewController {
 
 
 }
-
-
